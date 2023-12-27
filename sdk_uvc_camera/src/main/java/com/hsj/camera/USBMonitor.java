@@ -408,7 +408,7 @@ public final class USBMonitor {
      * @return hasPermission
      */
     private boolean updatePermission(final UsbDevice device, final boolean hasPermission) {
-        final int deviceKey = getDeviceKey(device, true);
+        final int deviceKey = getDeviceKey(device, false);
         synchronized (mHasPermissions) {
             if (hasPermission) {
                 if (mHasPermissions.get(deviceKey) == null) {
