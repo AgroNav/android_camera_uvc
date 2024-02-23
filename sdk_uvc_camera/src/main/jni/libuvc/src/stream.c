@@ -1798,7 +1798,10 @@ void uvc_stop_streaming(uvc_device_handle_t *devh) {
  */
 uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
 
-	int i;
+    int i, timeout_s = 1, ret = UVC_SUCCESS;
+    time_t add_secs;
+    struct timespec ts;
+    struct timeval tv;
 	ENTER();
 
 	if (!strmh) RETURN(UVC_SUCCESS, uvc_error_t);
@@ -1836,7 +1839,26 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
 			}
 			if (i == LIBUVC_NUM_TRANSFER_BUFS)
 				break;
-			pthread_cond_wait(&strmh->cb_cond, &strmh->cb_mutex);
+
+            add_secs = timeout_s ;
+            ts.tv_sec = 0;
+            ts.tv_nsec = 0;
+
+#if _POSIX_TIMERS > 0
+            clock_gettime(CLOCK_REALTIME, &ts);
+#else
+            gettimeofday(&tv, NULL);
+            ts.tv_sec = tv.tv_sec;
+            ts.tv_nsec = tv.tv_usec * 1000;
+#endif
+
+            ts.tv_sec += add_secs;
+
+            if (ETIMEDOUT == pthread_cond_timedwait(&strmh->cb_cond, &strmh->cb_mutex, &ts)){
+                ret = UVC_ERROR_TIMEOUT;
+                break;
+            }
+
 		}
 		// Kick the user thread awake
 		pthread_cond_broadcast(&strmh->cb_cond);
@@ -1850,7 +1872,7 @@ uvc_error_t uvc_stream_stop(uvc_stream_handle_t *strmh) {
 		pthread_join(strmh->cb_thread, NULL);
 	}
 
-	RETURN(UVC_SUCCESS, uvc_error_t);
+	RETURN(ret, uvc_error_t);
 }
 
 /** @brief Close stream.

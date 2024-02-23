@@ -7,6 +7,7 @@ extern "C" {
 
 #include "libyuv.h"
 #include <stdio.h>
+#include <errno.h>
 #include <libusb/libusb.h>
 #include <libuvc/libuvc_config.h>
 
