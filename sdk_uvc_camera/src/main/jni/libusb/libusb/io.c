@@ -1356,8 +1356,22 @@ void API_EXPORTED libusb_free_transfer(struct libusb_transfer *transfer) {
 	if (UNLIKELY(!transfer))
 		return;
 
-	if (transfer->flags & LIBUSB_TRANSFER_FREE_BUFFER && transfer->buffer)
+	if (transfer->flags & LIBUSB_TRANSFER_FREE_BUFFER && transfer->buffer) {
+		/* MMFF:
+		 * _uvc_delete_transfer calls free on transfer->buffer earlier before
+		 * entering this function so if we enter here (what actually probably
+		 * has never happened...) there would be a double free error reported
+		 * by Scudo (a dynamic user-mode memory allocator). But I leave it as
+		 * is.
+		 */
 		free(transfer->buffer);
+	}
+
+	/* MMFF:
+	 * It should be safe to set NULL ptr because transfer->buffer memory was
+	 * freed before (see my above comment).
+	 */
+	transfer->buffer = NULL;
 
 	itransfer = LIBUSB_TRANSFER_TO_USBI_TRANSFER(transfer);
 	usbi_mutex_destroy(&itransfer->lock);

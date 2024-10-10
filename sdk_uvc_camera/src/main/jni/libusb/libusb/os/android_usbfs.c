@@ -2927,6 +2927,10 @@ static int reap_for_handle(struct libusb_device_handle *handle) {
 	itransfer = urb->usercontext;
 	transfer = USBI_TRANSFER_TO_LIBUSB_TRANSFER(itransfer);
 
+	// MMFF: fix for USB camera crashing on disconnect
+	if (transfer->buffer == NULL)
+		return LIBUSB_ERROR_NO_DEVICE;
+
 	usbi_dbg("urb type=%d status=%d transferred=%d",
 		urb->type, urb->status, urb->actual_length);
 
